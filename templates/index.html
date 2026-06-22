@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sentiment Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 750px;
+            margin: 60px auto;
+            background: #f4f4f4;
+            padding: 20px;
+        }
+        h1 { color: #1D9E75; text-align: center; }
+        .subtitle { text-align: center; color: #777; margin-bottom: 24px; }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            cursor: pointer;
+            background: white;
+            font-size: 15px;
+            color: #555;
+        }
+        .tab.active {
+            background: #1D9E75;
+            color: white;
+            border-color: #1D9E75;
+        }
+        .section { display: none; }
+        .section.active { display: block; }
+        textarea {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            resize: vertical;
+            min-height: 120px;
+        }
+        .btn-row { display: flex; gap: 10px; margin-top: 12px; }
+        button.analyze {
+            flex: 1;
+            padding: 12px;
+            background: #1D9E75;
+            color: white;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        button.analyze:hover { background: #0F6E56; }
+        button.clear {
+            padding: 12px 20px;
+            background: white;
+            color: #555;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        button.clear:hover { background: #eee; }
+        .samples { margin-top: 14px; }
+        .samples p { font-size: 13px; color: #777; margin-bottom: 6px; }
+        .sample-btn {
+            display: inline-block;
+            margin: 4px;
+            padding: 6px 14px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            color: #333;
+        }
+        .sample-btn:hover { background: #e8f5f0; border-color: #1D9E75; }
+        .result-box {
+            margin-top: 30px;
+            padding: 24px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .POSITIVE { background: #d4edda; color: #155724; }
+        .NEGATIVE { background: #f8d7da; color: #721c24; }
+        .result-emoji { font-size: 40px; margin-bottom: 8px; }
+        .result-label { font-size: 26px; font-weight: bold; }
+        .confidence { font-size: 15px; color: #555; margin-top: 6px; }
+        .word-count { font-size: 12px; color: #999; text-align: right; margin-top: 4px; }
+
+        /* Multi sentence styles */
+        .sentence-result {
+            background: white;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 10px;
+            border-left: 5px solid #ccc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+        .sentence-result.POSITIVE { border-left-color: #1D9E75; }
+        .sentence-result.NEGATIVE { border-left-color: #E24B4A; }
+        .sentence-text { font-size: 14px; color: #333; flex: 1; }
+        .sentence-badge {
+            font-size: 13px;
+            font-weight: bold;
+            padding: 4px 14px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+        .badge-POSITIVE { background: #d4edda; color: #155724; }
+        .badge-NEGATIVE { background: #f8d7da; color: #721c24; }
+        .summary-box {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .summary-card {
+            flex: 1;
+            padding: 14px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 13px;
+            color: #555;
+        }
+        .summary-card .num {
+            font-size: 28px;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .card-pos { background: #d4edda; }
+        .card-pos .num { color: #155724; }
+        .card-neg { background: #f8d7da; }
+        .card-neg .num { color: #721c24; }
+        .card-total { background: #e2e3e5; }
+        .card-total .num { color: #383d41; }
+        .footer { text-align: center; margin-top: 40px; font-size: 12px; color: #aaa; }
+    </style>
+</head>
+<body>
+
+    <h1>Sentiment Analyzer</h1>
+    <p class="subtitle">Built with Python & Machine Learning — 85.1% accuracy</p>
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('single')">Single Sentence</div>
+        <div class="tab" onclick="switchTab('multi')">Analyze Paragraph</div>
+    </div>
+
+    <!-- SINGLE SENTENCE TAB -->
+    <div class="section active" id="tab-single">
+        <form method="POST" id="myform" action="/">
+            <textarea name="text" id="textbox"
+                placeholder="Type any sentence here..."
+                oninput="updateCount()">{{ user_text or '' }}</textarea>
+            <div class="word-count" id="wordcount">0 words</div>
+            <div class="btn-row">
+                <button type="submit" class="analyze">Analyze Sentiment</button>
+                <button type="button" class="clear" onclick="clearText()">Clear</button>
+            </div>
+        </form>
+
+        <div class="samples">
+            <p>Try an example:</p>
+            <span class="sample-btn" onclick="fillText('I absolutely loved this movie, it was amazing!')">I loved this movie</span>
+            <span class="sample-btn" onclick="fillText('This was the worst experience of my life.')">Worst experience</span>
+            <span class="sample-btn" onclick="fillText('The product was okay, nothing special.')">Just okay</span>
+            <span class="sample-btn" onclick="fillText('Brilliant performance, I highly recommend it!')">Brilliant!</span>
+            <span class="sample-btn" onclick="fillText('Total waste of money, very disappointing.')">Waste of money</span>
+        </div>
+
+        {% if result %}
+        <div class="result-box {{ result }}">
+            <div class="result-emoji">
+                {% if result == 'POSITIVE' %}  {% else %}  {% endif %}
+            </div>
+            <div class="result-label">{{ result }}</div>
+            <div class="confidence">Confidence: {{ confidence }}%</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- MULTI SENTENCE TAB -->
+    <div class="section" id="tab-multi">
+        <form method="POST" action="/multi">
+            <textarea name="paragraph"
+                placeholder="Paste a paragraph here. Each sentence will be analyzed separately.
+Example:
+I loved the food here. The service was terrible though. Overall it was an okay experience."
+                style="min-height: 160px;"></textarea>
+            <div class="btn-row">
+                <button type="submit" class="analyze">Analyze Each Sentence</button>
+            </div>
+        </form>
+
+        {% if sentences %}
+        <div style="margin-top: 24px;">
+            <div class="summary-box">
+                <div class="summary-card card-total">
+                    <span class="num">{{ sentences|length }}</span>Total sentences
+                </div>
+                <div class="summary-card card-pos">
+                    <span class="num">{{ sentences|selectattr('sentiment','equalto','POSITIVE')|list|length }}</span>Positive
+                </div>
+                <div class="summary-card card-neg">
+                    <span class="num">{{ sentences|selectattr('sentiment','equalto','NEGATIVE')|list|length }}</span>Negative
+                </div>
+            </div>
+
+            {% for s in sentences %}
+            <div class="sentence-result {{ s.sentiment }}">
+                <div class="sentence-text">{{ s.text }}</div>
+                <span class="sentence-badge badge-{{ s.sentiment }}">
+                    {% if s.sentiment == 'POSITIVE' %}😊{% else %}😞{% endif %}
+                    {{ s.sentiment }} {{ s.confidence }}%
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="footer">Sentiment Analyzer &nbsp;|&nbsp; Made by NIKITA PANDA</div>
+
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            event.target.classList.add('active');
+        }
+        function fillText(text) {
+            document.getElementById('textbox').value = text;
+            updateCount();
+            document.getElementById('myform').submit();
+        }
+        function clearText() {
+            document.getElementById('textbox').value = '';
+            updateCount();
+        }
+        function updateCount() {
+            const words = document.getElementById('textbox').value
+                .trim().split(/\s+/).filter(w => w.length > 0);
+            document.getElementById('wordcount').textContent = words.length + ' words';
+        }
+        updateCount();
+
+        {% if sentences %}
+        document.querySelectorAll('.tab')[1].classList.add('active');
+        document.querySelectorAll('.tab')[0].classList.remove('active');
+        document.getElementById('tab-multi').classList.add('active');
+        document.getElementById('tab-single').classList.remove('active');
+        {% endif %}
+    </script>
+
+</body>
+</html>

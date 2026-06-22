@@ -1,0 +1,5 @@
+IMDB Dataset.csv
+__pycache__/
+*.pyc
+*.pkl
+results.png
